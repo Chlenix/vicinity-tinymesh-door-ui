@@ -99,8 +99,8 @@ function setYAxis(name) {
                     padding: 0,
                     beginAtZero: true,
                     min: 0,
-                    max: 1200,
-                    stepSize: 100
+                    max: 100,
+                    stepSize: 10
                 }
             }],
             xAxes: [{
@@ -126,7 +126,7 @@ function isEmpty(v) {
 
 export default function LineChartCO2(props) {
 
-    const [dataCO2, setDataCO2] = useState(data);
+    const [dataDoorVisits, setDataCO2] = useState(data);
     const [toggle, setToggle] = useState(false);
     const [date, setDate] = useState(moment().tz('Europe/Oslo').toDate());
     const [dateRange, setDateRange] = useState([moment().tz('Europe/Oslo')]);
@@ -277,8 +277,7 @@ export default function LineChartCO2(props) {
                         pointHitRadius: 5,
                         data: response.data.data
                     },
-                    repeatHorizontal('critical', 1000, response.data.labels.length, 'rgba(255, 5, 18, 0.25)'),
-                    repeatHorizontal('warning', 800, response.data.labels.length, 'rgba(204,204,0,0.25)'),
+                    repeatHorizontal('threshold', 25, response.data.labels.length, 'rgba(255, 5, 18, 0.25)'),
 
                 ]
             });
@@ -410,7 +409,7 @@ export default function LineChartCO2(props) {
                 <ShowWarningPanel show={warningPanel}/>
             </ButtonToolbar>
 
-            <Line data={dataCO2} options={setYAxis('ppm')}/>
+            <Line data={dataDoorVisits} options={setYAxis('visits')}/>
         </div>
     );
 }

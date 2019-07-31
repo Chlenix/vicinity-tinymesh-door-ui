@@ -31,7 +31,7 @@ function Home() {
             return (
                 <Col key={e.name} style={{paddingBottom: '30px'}} sm={12}>
                     <LineChartCO2 sensor={
-                        {name: e.name, oid: e.oid}
+                        {name: e.oid, oid: e.oid}
                     }/>
                 </Col>
             );
@@ -40,7 +40,7 @@ function Home() {
 
     return (
         <Container>
-            <h2>TinyMesh AS - VAS CO2</h2>
+            <h2>TinyMesh AS - Room Cleaning UI</h2>
             <Row>
                 {getSensors()}
             </Row>

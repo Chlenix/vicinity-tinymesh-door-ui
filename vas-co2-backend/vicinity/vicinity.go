@@ -213,7 +213,7 @@ func (c *Client) GetSensors() (*gin.H, bool) {
 	var sensors []model.Sensor
 	var responseSensors []*sensor
 
-	c.db.Order("eid asc").Find(&sensors)
+	c.db.Order("oid asc").Find(&sensors)
 
 	for _, v := range sensors {
 		responseSensors = append(responseSensors, &sensor{Name: strings.Split(v.Eid, "-")[0], Oid: v.Oid.String()})
