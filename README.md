@@ -26,7 +26,7 @@ Before running this adapter, ensure that you have installed the following:
 
 1. Clone this repository using `git clone` <br>
 
-2. `cd` into the `vas-co2-backend` folder
+2. `cd` into the [vas-co2-backend](vas-co2-backend) folder
 
 ###### Ubuntu 18.04:
 `$ go build main.go`
