@@ -73,7 +73,6 @@ func (app *Environment) run() {
 	app.DB = database.New(app.Config.Database, dbLogger)
 	defer app.DB.Close()
 
-	//app.DB.DropTableIfExists(&model.Reading{}, &model.Sensor{})
 	app.DB.AutoMigrate(&model.Sensor{}, &model.Reading{})
 	app.DB.Model(&model.Reading{}).AddForeignKey("sensor_oid", "sensors(oid)", "CASCADE", "RESTRICT")
 

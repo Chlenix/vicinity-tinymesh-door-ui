@@ -8,6 +8,7 @@ import (
 	"vicinity-tinymesh-door-ui/vas-co2-backend/vicinity"
 )
 
+
 func (server *Server) getObjects(c *gin.Context) {
 	sensors, exist := server.vicinity.GetSensors()
 	if !exist {
@@ -81,32 +82,6 @@ func (server *Server) getDateRange(c *gin.Context) {
 	c.JSON(http.StatusOK, dateRange)
 }
 
-func (server *Server) getObjectReadings(c *gin.Context) {
-
-	oid, exists := c.Params.Get("oid")
-	if !exists {
-		log.Println("oid parameter is required")
-		c.AbortWithStatus(http.StatusBadRequest)
-		return
-	}
-
-	id, err := uuid.FromString(oid)
-	if err != nil {
-		log.Println(err.Error())
-		c.AbortWithStatus(http.StatusBadRequest)
-		return
-	}
-
-	readings, err := server.vicinity.GetReadings(id)
-	if err != nil {
-		log.Println(err.Error())
-		c.AbortWithStatus(http.StatusNotFound)
-		return
-	}
-
-	c.JSON(http.StatusOK, readings)
-}
-
 func (server *Server) getObjectReadingsByDate(c *gin.Context) {
 
 	oid, exists := c.Params.Get("oid")
@@ -131,6 +106,33 @@ func (server *Server) getObjectReadingsByDate(c *gin.Context) {
 	}
 
 	readings, err := server.vicinity.GetReadingsByDate(id, date)
+	if err != nil {
+		log.Println(err.Error())
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	c.JSON(http.StatusOK, readings)
+}
+
+// *DEPRECATED* replaced by getObjectReadingsByDate
+func (server *Server) getObjectReadings(c *gin.Context) {
+
+	oid, exists := c.Params.Get("oid")
+	if !exists {
+		log.Println("oid parameter is required")
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	id, err := uuid.FromString(oid)
+	if err != nil {
+		log.Println(err.Error())
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	readings, err := server.vicinity.GetReadings(id)
 	if err != nil {
 		log.Println(err.Error())
 		c.AbortWithStatus(http.StatusNotFound)

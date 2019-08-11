@@ -54,6 +54,15 @@ type VAS struct {
 	Actions    []interface{} `json:"actions"`
 }
 
+func New(vicinityConfig *config.VicinityConfig, db *gorm.DB) *Client {
+	return &Client{
+		config: vicinityConfig,
+		db:     db,
+		td:     nil,
+	}
+}
+
+// creates the VAS portion of a thing-description
 func (c *Client) makeVAS(oid, name, version string, kw []string) VAS {
 	return VAS{
 		Oid:      oid,
@@ -68,6 +77,7 @@ func (c *Client) makeVAS(oid, name, version string, kw []string) VAS {
 	}
 }
 
+// returns the full thing description JSON
 func (c *Client) GetThingDescription() *gin.H {
 	if c.td == nil {
 
@@ -83,6 +93,8 @@ func (c *Client) GetThingDescription() *gin.H {
 	return c.td
 }
 
+// Returns all the dates with recorded data (at least 1 data point must exist)
+// used in enabling date picker dates
 func (c *Client) GetDateRange(oid uuid.UUID) *gin.H {
 	var result []dateRange
 	c.db.Raw(
@@ -104,6 +116,7 @@ func (c *Client) GetDateRange(oid uuid.UUID) *gin.H {
 	}
 }
 
+// Get all readings at a specified date
 func (c *Client) GetReadingsByDate(oid uuid.UUID, dateString string) (*gin.H, error) {
 	var labels []string
 	var data []int
@@ -139,6 +152,61 @@ func (c *Client) GetReadingsByDate(oid uuid.UUID, dateString string) (*gin.H, er
 	return readings, nil
 }
 
+// Stores the event data in the database relating to a sensor.
+// If the sensor is not present the function creates a new one.
+func (c *Client) StoreEventData(e EventData, oid uuid.UUID, eid string) error {
+	var sensor model.Sensor
+
+	t, err := time.Parse(time.RFC3339, e.TimeString)
+
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
+
+	fmt.Println(t.String())
+
+	// create new sensor if no sensor corresponding to the oid is in the database
+	c.db.Where(model.Sensor{Oid: oid}).FirstOrCreate(&sensor, model.Sensor{Oid: oid, Eid: eid})
+
+	if c.db.Error != nil {
+		log.Println(c.db.Error.Error())
+		return errors.New(fmt.Sprintf("could not fetch/create oid %v", oid.String()))
+	}
+
+	var val int8 = 0
+	if e.Value {
+		val = 1
+	}
+
+	c.db.Create(&model.Reading{Value: val, Time: t, SensorOid: sensor.Oid})
+
+	if c.db.Error != nil {
+		log.Println(c.db.Error.Error())
+		return errors.New(fmt.Sprintf("could not store event reading of oid: %v", oid.String()))
+	}
+
+	return nil
+}
+
+// Gets all sensors in the database. The frontend app relies on this method the following way:
+// For each sensor returned by this method -> call GetDateRange
+func (c *Client) GetSensors() (*gin.H, bool) {
+	var sensors []model.Sensor
+	var responseSensors []*sensor
+
+	c.db.Order("oid asc").Find(&sensors)
+
+	for _, v := range sensors {
+		responseSensors = append(responseSensors, &sensor{Name: strings.Split(v.Eid, "-")[0], Oid: v.Oid.String()})
+	}
+
+	result := &gin.H{"sensors": responseSensors}
+
+	return result, len(sensors) > 0
+}
+
+// *DEPRECATED* replaced by GetReadingsByDate
 func (c *Client) GetReadings(oid uuid.UUID) (*gin.H, error) {
 	var result []chartData
 	var labels []string
@@ -173,61 +241,4 @@ func (c *Client) GetReadings(oid uuid.UUID) (*gin.H, error) {
 	}
 
 	return readings, nil
-}
-
-func (c *Client) StoreEventData(e EventData, oid uuid.UUID, eid string) error {
-	var sensor model.Sensor
-
-	t, err := time.Parse(time.RFC3339, e.TimeString)
-
-	if err != nil {
-		log.Println(err.Error())
-		return err
-	}
-
-	fmt.Println(t.String())
-
-	c.db.Where(model.Sensor{Oid: oid}).FirstOrCreate(&sensor, model.Sensor{Oid: oid, Eid: eid})
-
-	if c.db.Error != nil {
-		log.Println(c.db.Error.Error())
-		return errors.New(fmt.Sprintf("could not fetch/create oid %v", oid.String()))
-	}
-
-	var val int8 = 0
-	if e.Value {
-		val = 1
-	}
-
-	c.db.Create(&model.Reading{Value: val, Time: t, SensorOid: sensor.Oid})
-
-	if c.db.Error != nil {
-		log.Println(c.db.Error.Error())
-		return errors.New(fmt.Sprintf("could not store event reading of oid: %v", oid.String()))
-	}
-
-	return nil
-}
-
-func (c *Client) GetSensors() (*gin.H, bool) {
-	var sensors []model.Sensor
-	var responseSensors []*sensor
-
-	c.db.Order("oid asc").Find(&sensors)
-
-	for _, v := range sensors {
-		responseSensors = append(responseSensors, &sensor{Name: strings.Split(v.Eid, "-")[0], Oid: v.Oid.String()})
-	}
-
-	result := &gin.H{"sensors": responseSensors}
-
-	return result, len(sensors) > 0
-}
-
-func New(vicinityConfig *config.VicinityConfig, db *gorm.DB) *Client {
-	return &Client{
-		config: vicinityConfig,
-		db:     db,
-		td:     nil,
-	}
 }
